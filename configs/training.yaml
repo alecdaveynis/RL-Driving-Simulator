@@ -1,0 +1,95 @@
+# Five-action Double DQN (accelerate / coast / brake / lane left / lane right) with the full
+# six-stage curriculum. Lane changes are *masked* in stages 1-3 (the action space itself never
+# changes, so one network is valid for the whole run).
+run_name: dqn_5action
+seed: 0
+device: auto            # auto = cpu (fastest for this MLP); use "mps" to force Apple GPU
+total_steps: 450000
+reward_scale: 0.1
+
+env:
+  num_actions: 5
+  simulation_config: configs/simulation.yaml
+
+dqn:
+  hidden: [128, 128]
+  lr: 0.0005
+  gamma: 0.99
+  batch_size: 64
+  buffer_size: 100000
+  learning_starts: 2000
+  train_freq: 1
+  target_sync_interval: 1000
+  grad_clip: 10.0
+  huber_delta: 1.0
+  double_dqn: true
+
+exploration:
+  start: 1.0
+  end: 0.05
+  decay_steps: 40000
+  schedule: linear
+  stage_restart: 0.25            # epsilon is bumped to this on entering a new stage...
+  stage_restart_decay_steps: 15000   # ...and decays linearly back over this many steps
+
+eval:
+  interval_steps: 15000
+  episodes_per_family: 8
+  seed_base: 10000000            # reserved, never used for training scenarios
+  families: [lead_constant, lead_brake, multi_lead, multi_lane, cut_in, mixed, unseen]
+
+checkpoint:
+  interval_steps: 30000
+  keep_last: 2
+  save_replay: true
+
+logging:
+  interval_steps: 5000
+  episode_window: 50
+
+curriculum:
+  enabled: true
+  # A stage ends when, after min_steps, the last `window` stage episodes meet the success/collision
+  # criteria, or when max_steps is reached. Later stages mix in earlier families to limit forgetting.
+  stages:
+    - name: s1_lead_const
+      families: {lead_constant: 1.0}
+      difficulty: [0.0, 0.7]
+      lane_changes: false
+      min_steps: 10000
+      max_steps: 40000
+      advance: {window: 100, success_rate: 0.9, collision_rate: 0.03}
+    - name: s2_lead_brake
+      families: {lead_brake: 0.8, lead_constant: 0.2}
+      difficulty: [0.0, 0.8]
+      lane_changes: false
+      min_steps: 15000
+      max_steps: 50000
+      advance: {window: 100, success_rate: 0.85, collision_rate: 0.05}
+    - name: s3_multi_lead
+      families: {multi_lead: 0.6, lead_brake: 0.25, lead_constant: 0.15}
+      difficulty: [0.0, 0.9]
+      lane_changes: false
+      min_steps: 15000
+      max_steps: 50000
+      advance: {window: 100, success_rate: 0.8, collision_rate: 0.08}
+    - name: s4_multi_lane
+      families: {multi_lane: 0.6, multi_lead: 0.2, lead_brake: 0.2}
+      difficulty: [0.0, 1.0]
+      lane_changes: true
+      min_steps: 30000
+      max_steps: 80000
+      advance: {window: 100, success_rate: 0.75, collision_rate: 0.1}
+    - name: s5_cut_in
+      families: {cut_in: 0.5, multi_lane: 0.2, lead_brake: 0.15, multi_lead: 0.15}
+      difficulty: [0.0, 1.0]
+      lane_changes: true
+      min_steps: 30000
+      max_steps: 80000
+      advance: {window: 100, success_rate: 0.7, collision_rate: 0.12}
+    - name: s6_mixed
+      families: {mixed: 0.6, cut_in: 0.15, multi_lane: 0.1, lead_brake: 0.075, multi_lead: 0.075}
+      difficulty: [0.2, 1.0]
+      lane_changes: true
+      min_steps: 0
+      max_steps: 1000000000   # final stage runs until total_steps

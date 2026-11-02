@@ -1,0 +1,66 @@
+# Three-action (longitudinal-only) Double DQN. This is a *separate model* from the 5-action run:
+# its checkpoints store num_actions=3 and cannot be loaded into the 5-action environment.
+run_name: dqn_3action
+seed: 0
+device: auto
+total_steps: 250000
+reward_scale: 0.1
+
+env:
+  num_actions: 3
+  simulation_config: configs/simulation.yaml
+
+dqn:
+  hidden: [128, 128]
+  lr: 0.0005
+  gamma: 0.99
+  batch_size: 64
+  buffer_size: 100000
+  learning_starts: 2000
+  target_sync_interval: 1000
+
+exploration:
+  start: 1.0
+  end: 0.05
+  decay_steps: 30000
+  schedule: linear
+  stage_restart: 0.25
+  stage_restart_decay_steps: 10000
+
+eval:
+  interval_steps: 10000
+  episodes_per_family: 8
+  families: [lead_constant, lead_brake, multi_lead, multi_lane, cut_in, mixed, unseen]
+
+checkpoint:
+  interval_steps: 25000
+
+logging:
+  interval_steps: 5000
+
+curriculum:
+  enabled: true
+  stages:
+    - name: s1_lead_const
+      families: {lead_constant: 1.0}
+      difficulty: [0.0, 0.7]
+      min_steps: 10000
+      max_steps: 30000
+      advance: {window: 100, success_rate: 0.9, collision_rate: 0.03}
+    - name: s2_lead_brake
+      families: {lead_brake: 0.8, lead_constant: 0.2}
+      difficulty: [0.0, 0.8]
+      min_steps: 15000
+      max_steps: 40000
+      advance: {window: 100, success_rate: 0.85, collision_rate: 0.05}
+    - name: s3_multi_lead
+      families: {multi_lead: 0.6, lead_brake: 0.25, lead_constant: 0.15}
+      difficulty: [0.0, 0.9]
+      min_steps: 15000
+      max_steps: 40000
+      advance: {window: 100, success_rate: 0.8, collision_rate: 0.08}
+    - name: s4_traffic          # cut-ins and traffic, longitudinal control only
+      families: {cut_in: 0.4, multi_lane: 0.3, lead_brake: 0.15, multi_lead: 0.15}
+      difficulty: [0.0, 1.0]
+      min_steps: 0
+      max_steps: 1000000000

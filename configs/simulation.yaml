@@ -1,0 +1,72 @@
+# Simulation settings. Every value shown is the built-in default (driving_sim/config.py);
+# edit here to change physics, sensors, rewards or the window layout.
+num_actions: 5            # 3 = accelerate/coast/brake, 5 = + lane left/right
+
+physics:
+  dt: 0.05                # fixed physics timestep [s] (independent of render FPS)
+  decision_substeps: 4    # physics ticks per agent decision -> 0.2 s decision interval
+  max_speed: 36.0
+  lane_change_duration: 3.0
+  lane_change_min_speed: 3.0
+  crash_decel: 10.0
+
+road:
+  lane_width: 3.7
+
+ego:
+  max_accel: 2.5          # "accelerate" target acceleration [m/s^2]
+  max_brake: 6.0          # "brake" target deceleration [m/s^2]
+  coast_decel: 0.25
+  max_jerk: 8.0           # acceleration changes smoothly, bounded [m/s^3]
+  length: 4.7
+  width: 1.9
+
+episode:
+  max_steps: 400          # decisions (80 s)
+  goal_distance: 900.0    # reach this x to complete the episode
+  stall_speed: 0.5
+  stall_steps: 50         # standing still for 10 s on a free road ends the episode (penalised)
+
+sensors:
+  range: 100.0
+  ttc_max: 10.0
+  rel_speed_scale: 15.0
+
+reward:
+  target_speed: 25.0
+  speed_limit: 30.0
+  w_progress: 1.0
+  w_speed_limit: 0.2
+  headway_safe: 1.5
+  w_headway: 1.0
+  ttc_safe: 4.0
+  w_ttc: 1.0
+  comfort_decel: 3.0
+  w_brake: 0.5
+  w_jerk: 0.1
+  w_lane_change: 0.4
+  lane_change_cooldown: 25
+  w_repeat_lane_change: 2.0
+  w_invalid: 0.2
+  collision: -50.0
+  off_road: -50.0
+  stalled: -30.0
+  completion: 25.0
+
+metrics:                  # independent driving-quality thresholds (never used for training)
+  hard_brake_decel: 4.0
+  unsafe_headway: 1.0
+  unsafe_ttc: 2.5
+
+scenario:                 # default sampler when no scenario is specified
+  families: {mixed: 1.0}
+  difficulty_range: [0.0, 1.0]
+
+render:
+  width: 1360
+  height: 800
+  panel_width: 330
+  fps: 60
+  pixels_per_meter: 13.0
+  lateral_scale: 1.35     # widen lanes/cars on screen for readability (physics unaffected)
+  dynamic_zoom: true

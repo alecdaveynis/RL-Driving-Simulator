@@ -1,0 +1,8 @@
+numpy>=1.26
+torch>=2.2
+gymnasium>=0.29
+# pygame-ce is API-compatible with pygame and ships wheels for new Python versions
+pygame-ce>=2.5
+matplotlib>=3.8
+pyyaml>=6.0
+pytest>=8.0

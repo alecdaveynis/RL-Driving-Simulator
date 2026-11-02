@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rl-driving-simulator"
+version = "0.1.0"
+description = "2D autonomous-driving RL laboratory: Double DQN, rule-based baseline, Pygame simulator"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26", "torch>=2.2", "gymnasium>=0.29", "pygame-ce>=2.5",
+  "matplotlib>=3.8", "pyyaml>=6.0",
+]
+
+[tool.setuptools]
+packages = ["driving_sim", "agents", "app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
